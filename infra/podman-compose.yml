@@ -1,0 +1,16 @@
+version: "3"
+services:
+  canary-server:
+    build: ./canary-server
+    container_name: mcp-canary
+    ports:
+      - "18080:8080"
+    volumes:
+      - canary-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8080/health"]
+      interval: 5s
+      retries: 5
+
+volumes:
+  canary-data:
