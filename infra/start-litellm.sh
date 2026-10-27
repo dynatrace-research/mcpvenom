@@ -14,10 +14,12 @@ print(provide_token(region='us-east-1'), end='')
 ")
 echo "token generated (${#AWS_BEARER_TOKEN_BEDROCK} chars)"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 LITELLM_BIN=""
 for candidate in \
   "${HOME}/.local/bin/litellm" \
-  "${HOME}/workspace/mcp-experiment-harness/harnesses/.venv/bin/litellm" \
+  "${SCRIPT_DIR}/../.venv/bin/litellm" \
   "$(command -v litellm 2>/dev/null || true)"; do
   [[ -x "$candidate" ]] && { LITELLM_BIN="$candidate"; break; }
 done
@@ -25,8 +27,7 @@ done
 echo "using litellm: $LITELLM_BIN"
 
 # Add infra/ to PYTHONPATH so litellm_fable5_hook is importable as a module.
-HOOK_DIR="${HOME}/workspace/mcp-experiment-harness/infra"
-export PYTHONPATH="${HOOK_DIR}${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH="${SCRIPT_DIR}${PYTHONPATH:+:$PYTHONPATH}"
 
 echo "starting litellm on port $PORT..."
 exec "$LITELLM_BIN" --config "$CONFIG" --port "$PORT"

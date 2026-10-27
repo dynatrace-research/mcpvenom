@@ -14,3 +14,7 @@
 - Renamed the scenario library from mcpfuzz to mcpvenom; result records keep their original `mcpfuzz_*` fields
 - Replaced anonymized author and repository metadata with the published ones
 - Bundled the frozen per-run result JSON under `artifacts/` (run1, run2) alongside the tool, harnesses, scenarios, and scanner
+- Changed the `vendor/mcpvenom/pyproject.toml` repository URL to `dynatrace-research/mcpvenom` and added a second author
+
+### Fixed
+- Fixed `infra/start-litellm.sh` failing outside the original author's checkout; it now resolves the `litellm` binary and hook directory from the script location
