@@ -1,0 +1,143 @@
+# LiteLLM proxy config (template). Adjust regions/endpoints for your account.
+# Start: litellm --config ~/litellm-config.yaml --port 4000
+#
+# Auth: EC2 instance role (no credentials needed — boto3 picks up IMDS).
+# All models routed through AWS Bedrock us-east-1.
+#
+# Model ARN types:
+#   ON_DEMAND      → bedrock/<foundation-model-id>
+#   INFERENCE_PROFILE → bedrock/<inference-profile-id>  (prefix: us.*)
+
+model_list:
+
+  # ── Original matrix ────────────────────────────────────────────────────────
+  - model_name: claude-haiku
+    # INFERENCE_PROFILE — on-demand ID rejected in this account
+    litellm_params:
+      model: bedrock/us.anthropic.claude-haiku-4-5-20251001-v1:0
+      aws_region_name: us-east-1
+
+  - model_name: claude-sonnet
+    # INFERENCE_PROFILE — on-demand ID rejected in this account
+    litellm_params:
+      model: bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0
+      aws_region_name: us-east-1
+
+  - model_name: mistral-large
+    litellm_params:
+      model: bedrock/mistral.mistral-large-2402-v1:0
+      aws_region_name: us-east-1
+
+  - model_name: llama-maverick
+    # INFERENCE_PROFILE — uses cross-region profile, not foundation-model ARN
+    litellm_params:
+      model: bedrock/us.meta.llama4-maverick-17b-instruct-v1:0
+      aws_region_name: us-east-1
+
+  - model_name: nova-pro
+    litellm_params:
+      model: bedrock/amazon.nova-pro-v1:0
+      aws_region_name: us-east-1
+
+  # ── Anthropic scaling ──────────────────────────────────────────────────────
+  - model_name: claude-sonnet-5
+    # INFERENCE_PROFILE
+    litellm_params:
+      model: bedrock/us.anthropic.claude-sonnet-5
+      aws_region_name: us-east-1
+    model_info:
+      bedrock_converse_supports_strict_tools: false
+
+  - model_name: claude-opus-4-8
+    # INFERENCE_PROFILE
+    litellm_params:
+      model: bedrock/us.anthropic.claude-opus-4-8
+      aws_region_name: us-east-1
+
+  - model_name: claude-fable-5
+    # INFERENCE_PROFILE.
+    # max_tokens floor: reasoning models need ≥200 tokens to emit a response.
+    litellm_params:
+      model: bedrock/us.anthropic.claude-fable-5
+      aws_region_name: us-east-1
+      max_tokens: 4096
+    model_info:
+      bedrock_converse_supports_strict_tools: false
+
+  # ── OpenAI on Bedrock ──────────────────────────────────────────────────────
+  - model_name: gpt-oss-120b
+    # ON_DEMAND — OpenAI open-weight 120B via standard Bedrock runtime.
+    litellm_params:
+      model: bedrock/openai.gpt-oss-120b-1:0
+      aws_region_name: us-east-1
+
+  - model_name: gpt-5-5
+    # Reasoning model — Responses API only (not chat/completions).
+    # Routed via a Bedrock OpenAI-compatible endpoint using Bearer token auth.
+    # Token generated at startup by start-litellm.sh via aws_bedrock_token_generator.
+    # Expires ~12h; restart litellm to refresh (instance role auto-provides creds).
+    # use_responses_api: harness must call /v1/responses (not /v1/chat/completions).
+    model_info:
+      use_responses_api: true
+    litellm_params:
+      model: openai/openai.gpt-5.5
+      # Set to your account's Bedrock OpenAI-compatible endpoint.
+      api_base: https://YOUR-BEDROCK-ENDPOINT/openai/v1
+      api_key: os.environ/AWS_BEARER_TOKEN_BEDROCK
+
+  # ── Reasoning models ───────────────────────────────────────────────────────
+  - model_name: deepseek-r1
+    # INFERENCE_PROFILE — reasoning model; needs max_tokens ≥200.
+    litellm_params:
+      model: bedrock/us.deepseek.r1-v1:0
+      aws_region_name: us-east-1
+      max_tokens: 4096
+
+  - model_name: deepseek-v3-2
+    litellm_params:
+      model: bedrock/deepseek.v3.2
+      aws_region_name: us-east-1
+
+  # ── Multilingual / Chinese-first ───────────────────────────────────────────
+  - model_name: qwen3-next-80b
+    litellm_params:
+      model: bedrock/qwen.qwen3-next-80b-a3b
+      aws_region_name: us-east-1
+
+  - model_name: glm-5
+    litellm_params:
+      model: bedrock/zai.glm-5
+      aws_region_name: us-east-1
+
+  # ── Open-weight ────────────────────────────────────────────────────────────
+  - model_name: gemma3-27b
+    litellm_params:
+      model: bedrock/google.gemma-3-27b-it
+      aws_region_name: us-east-1
+
+  - model_name: llama4-scout
+    # INFERENCE_PROFILE
+    litellm_params:
+      model: bedrock/us.meta.llama4-scout-17b-instruct-v1:0
+      aws_region_name: us-east-1
+
+  # ── Intra-family scale ablation (Mistral) ─────────────────────────────────
+  - model_name: mistral-large-3
+    litellm_params:
+      model: bedrock/mistral.mistral-large-3-675b-instruct
+      aws_region_name: us-east-1
+
+  - model_name: ministral-14b
+    litellm_params:
+      model: bedrock/mistral.ministral-3-14b-instruct
+      aws_region_name: us-east-1
+
+litellm_settings:
+  drop_params: true       # ignore unsupported params per model
+  modify_params: true     # fix Llama/Bedrock "tool result + conversation in same turn" error
+  request_timeout: 120
+  callbacks:
+    - litellm_fable5_hook.fable5_hook
+
+general_settings:
+  master_key: sk-local    # matches LITELLM_KEY in .bash_aliases
